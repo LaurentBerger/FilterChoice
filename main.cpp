@@ -20,7 +20,9 @@ UMat GradientDericheY(UMat op, double alphaDerive, double alphaMoyenne);
 UMat GradientDericheX(UMat op, double alphaDerive, double alphaMoyenne);
 UMat GradientPaillouY(UMat op, double alphaDerive, double alphaMoyenne);
 UMat GradientPaillouX(UMat op, double alphaDerive, double alphaMoyenne);
-void CannyBis(InputArray _src, OutputArray _dst,double low_thresh, double high_thresh,	int aperture_size, bool L2gradient, InputOutputArray _dx, InputOutputArray _dy);
+void CannyBis(  OutputArray _dst,
+                double low_thresh, double high_thresh,
+                bool L2gradient ,InputOutputArray _dx,InputOutputArray _dy);
 
 
 static void DisplayImage(UMat x,string s)
@@ -48,7 +50,7 @@ int maxThresholdPai = 20;
 int lowThresholdCan = 20;
 int maxThresholdCan = 20;
 int aperture = 0;
-int const max_lowThreshold = 500;
+int const max_lowThreshold = 1000;
 Mat sobel_x, sobel_y;
 UMat img;
 const char* window_deriche = "Edge Map Deriche";
@@ -69,11 +71,11 @@ static void CannyThreshold(int, void*)
 	minMaxLoc(ry, &minv, &maxv);
 	Mat mm;
 	mm = abs(rx.getMat(ACCESS_READ));
-	rx.getMat(ACCESS_READ).convertTo(sobel_x, CV_16S, 10);
-	mm = abs(ry.getMat(ACCESS_READ)); ry.getMat(ACCESS_READ).convertTo(sobel_y, CV_16S, 10);
+	rx.getMat(ACCESS_READ).convertTo(sobel_x, CV_16S, 1);
+	mm = abs(ry.getMat(ACCESS_READ)); ry.getMat(ACCESS_READ).convertTo(sobel_y, CV_16S, 1);
 	minMaxLoc(sobel_x, &minv, &maxv);
 	minMaxLoc(sobel_y, &minv, &maxv);
-	CannyBis(img, dst, lowThresholdPai, maxThresholdPai, 3, false, sobel_x, sobel_y);
+	CannyBis(dst, lowThresholdPai, maxThresholdPai,  true, sobel_x, sobel_y);
 	UMat modPai;
 	add(rx.mul(rx), ry.mul(ry), modPai);
 	sqrt(modPai, modPai);
@@ -86,11 +88,11 @@ static void CannyThreshold(int, void*)
 	minMaxLoc(rx, &minv, &maxv);
 	minMaxLoc(ry, &minv, &maxv);
 	mm = abs(rx.getMat(ACCESS_READ));
-	rx.getMat(ACCESS_READ).convertTo(sobel_x, CV_16S, 10);
-	mm = abs(ry.getMat(ACCESS_READ)); ry.getMat(ACCESS_READ).convertTo(sobel_y, CV_16S, 10);
+	rx.getMat(ACCESS_READ).convertTo(sobel_x, CV_16S, 1);
+	mm = abs(ry.getMat(ACCESS_READ)); ry.getMat(ACCESS_READ).convertTo(sobel_y, CV_16S, 1);
 	minMaxLoc(sobel_x, &minv, &maxv);
 	minMaxLoc(sobel_y, &minv, &maxv);
-	CannyBis(img, dst, lowThresholdDer, maxThresholdDer, 3, false, sobel_x, sobel_y);
+	CannyBis(dst, lowThresholdDer, maxThresholdDer, true, sobel_x, sobel_y);
 	UMat modDer;
 	add(rx.mul(rx), ry.mul(ry), modDer);
 	sqrt(modDer, modDer);
@@ -106,7 +108,6 @@ static void CannyThreshold(int, void*)
 int main(int argc, char* argv[])
 {
 	cv::ocl::setUseOpenCL(false);
-	UMat m=UMat::zeros(256,256,CV_8UC1);
 	//imread("c:/lib/opencv/samples/data/pic3.png", CV_LOAD_IMAGE_GRAYSCALE).copyTo(m);
 	//imread("f:/lib/opencv/samples/data/aero1.jpg", CV_LOAD_IMAGE_GRAYSCALE).copyTo(m);
 	//imread("C:/Users/Laurent.PC-LAURENT-VISI/Downloads/14607367432299179.png", CV_LOAD_IMAGE_COLOR).copyTo(m);
@@ -114,8 +115,9 @@ int main(int argc, char* argv[])
 //	imread("C:/Users/Laurent.PC-LAURENT-VISI/Desktop/n67ut.jpg", CV_LOAD_IMAGE_GRAYSCALE).copyTo(img);
 //	imread("c:/lib/opencv/samples/data/lena.jpg", CV_LOAD_IMAGE_GRAYSCALE).copyTo(m);
 //	imread("c:/lib/opencv/samples/data/lena.jpg", CV_LOAD_IMAGE_GRAYSCALE).copyTo(img);
-	imread("c:/lib/opencv/samples/data/pic2.png", CV_LOAD_IMAGE_GRAYSCALE).copyTo(m);
-	imread("c:/lib/opencv/samples/data/pic2.png", CV_LOAD_IMAGE_GRAYSCALE).copyTo(img);
+//	imread("f:/lib/opencv/samples/data/pic2.png", CV_LOAD_IMAGE_GRAYSCALE).copyTo(img);
+	imread("A9MKM.jpg", CV_LOAD_IMAGE_GRAYSCALE).copyTo(img);
+    
 	namedWindow(window_deriche, WINDOW_AUTOSIZE);
 	namedWindow(window_paillou, WINDOW_AUTOSIZE);
 	namedWindow(window_canny, WINDOW_AUTOSIZE);
@@ -131,7 +133,7 @@ int main(int argc, char* argv[])
 	createTrackbar("Pai. w:", window_paillou, &ww, 400, CannyThreshold);
 	createTrackbar("Can. Min.", window_canny, &lowThresholdCan, max_lowThreshold, CannyThreshold);
 	createTrackbar("Can. Max.", window_canny, &maxThresholdCan, max_lowThreshold, CannyThreshold);
-	createTrackbar("Can. ape.", window_canny, &aperture, 11, CannyThreshold);
+	createTrackbar("Can. ape.", window_canny, &aperture, 2, CannyThreshold);
 	CannyThreshold(0, NULL);
 	waitKey();
 

@@ -24,169 +24,6 @@ http://www.esiee.fr/~coupriem/Algo/algoima.html
  
 
 
-#ifdef __AFINIRIIRFILTER__
-namespace cv{
-class ParallelIIRColFilter: public ParallelLoopBody
-{
-private:
-    Mat &src;
-    Mat &dst;
-    std::vector<double> num,den;
-    bool verbose;
-public:
-    ParallelIIRColFilter(Mat& imgSrc, Mat &d,std::vector<double> &a,std::vector<double> &b):
-        src(imgSrc),
-        dst(d),
-        num(a),
-        den(b),
-        verbose(false)
-    {}
-    void Verbose(bool b){verbose=b;}
-    virtual void operator()(const Range& range) const
-    {
-        if (verbose)
-            std::cout << getThreadNum()<<"# :Start from row " << range.start << " to "  << range.end-1<<" ("<<range.end-range.start<<" loops)" << std::endl;
-
-        float                *f2;
-        int tailleSequence=(img.rows>img.cols)?img.rows:img.cols;
-        double *g1=new double[tailleSequence],*g2=new double[tailleSequence];
-        int rows=img.rows,cols=img.cols;
-		int oMax = static_cast<int>(max(num.size(), den.size()));
-
-		// Filtrage colonnne : signal matrice colonne
-
-        switch(img.depth()){
-        case CV_8U :
-        {
-// zone filtrée par le thread : bande verticale
-            for (int j=range.start;j<range.end;j++)
-            {
-                // Causal vertical  IIR filter 
-                f2 = (float*)dst.ptr(0);
-                f2 += j;
-				for (int i = 0; i < rows; i++)
-				{
-					unsigned char *x = (unsigned char*)src.ptr(0);
-					x += j;
-					// Constant boundary
-					double boundary = *x;
-					g1[i] = 0;
-					for (int k = 0; k < oMax; k++, x += -cols)
-					{
-						if (i - k >= 0)
-						{
-							if (k < num.size())
-								g1[i] += num[k] * *x;
-							if (k<den.size())
-								g1[i]+= -den[k] * g1[i - k];
-						}
-						else if (k<num.size())
-							g1[i] += num[k] * boundary;
-					}
-				}
-				// Anticausal vertical IIR filter
-				for (int i = rows-1; i >=0; i++)
-				{
-					unsigned char *x = (unsigned char*)src.ptr(rows-1);
-					x += j;
-					// Constant boundary
-					double boundary = *x;
-					g2[i] = 0;
-					for (int k = 0; k < oMax; k++, x += cols)
-					{
-						if (i + k <rows)
-						{
-							if (k < num.size())
-								g2[i] += num[k] * *x;
-							if (k<den.size())
-								g2[i] += -den[k] * g2[i + k];
-						}
-						else if (k<num.size())
-							g1[i] += num[k] * boundary;
-					}
-				}
-                c1 = (unsigned char*)src.ptr(0);
-                c1 += (rows-1)*cols+j;
-                i = rows-1;
-                g2[i] =(a3+a4+b1+b2)* *c1;
-                g2[i] =(a3+a4)* *c1;
-                i--;
-                c1-=cols;
-                g2[i] = a3* c1[cols] + a4 * c1[cols]+(b1+b2)*g2[i+1];
-                g2[i] = a3* c1[cols] + a4 * c1[cols]+(b1)*g2[i+1];
-                i--;
-                c1-=cols;
-                for (i=rows-3;i>=0;i--,c1-=cols)
-                    g2[i] = a3*c1[cols] +a4* c1[2*cols]+
-                            b1*g2[i+1]+b2*g2[i+2];
-                for (i=0;i<rows;i++,f2+=cols)
-                    *f2 = (float)(g1[i]+g2[i]);
-                }
-            }
-            break;
-        case CV_16S :
-        case CV_16U :
-        {
-            unsigned short *c1;
-            for (int j=range.start;j<range.end;j++)
-            {
-                c1 = ((unsigned short*)img.ptr(0));
-                f2 = ((float*)im1.ptr(0));
-                f2 += j;
-                c1+=j;
-                int i=0;
-                g1[i] = (a1 + a2 +b1+b2)* *c1  ;
-                g1[i] = (a1 + a2 )* *c1  ;
-                i++;
-                c1+=cols;
-                g1[i] = a1 * *c1 + a2 * c1[-cols] + (b1+b2) * g1[i-1];
-                g1[i] = a1 * *c1 + a2 * c1[-cols] + (b1) * g1[i-1];
-                i++;
-                c1+=cols;
-                for (i=2;i<rows;i++,c1+=cols)
-                    g1[i] = a1 * *c1 + a2 * c1[-cols] +b1*g1[i-1]+b2 *g1[i-2];
-                // Anticausal vertical IIR filter
-                c1 = ((unsigned short*)img.ptr(0));
-                c1 += (rows-1)*cols+j;
-                i = rows-1;
-                g2[i] =(a3+a4+b1+b2)* *c1;
-                g2[i] =(a3+a4)* *c1;
-                i--;
-                c1-=cols;
-                g2[i] = (a3+a4)* c1[cols] +(b1+b2)*g2[i+1];
-                g2[i] = (a3+a4)* c1[cols] +(b1)*g2[i+1];
-                i--;
-                c1-=cols;
-                for (i=rows-3;i>=0;i--,c1-=cols)
-                    g2[i] = a3*c1[cols] +a4* c1[2*cols]+b1*g2[i+1]+b2*g2[i+2];
-                c1 = ((unsigned short*)img.ptr(0))+j;
-                for (i=0;i<rows;i++,f2+=cols,c1+=cols)
-                    *f2 = 0**c1+(float)(g1[i]+g2[i]);
-            }
-        }
-            break;
-        case CV_32S :
-             break;
-        case CV_32F :
-             break;
-        case CV_64F :
-             break;
-        default :
-            delete []g1;
-            delete []g2;
-            return ;
-            }
-        delete []g1;
-        delete []g2;
-    };
-    ParallelIIRColFilter& operator=(const ParallelIIRColFilter &) {
-         return *this;
-    };
-};
-
-
-}
-#endif
 
 
 
@@ -671,40 +508,29 @@ UMat GradientDericheX(UMat op, double alphaDerive,double alphaMean)
 
 
 
-void CannyBis( InputArray _src, OutputArray _dst,
+void CannyBis(  OutputArray _dst,
                 double low_thresh, double high_thresh,
-                int aperture_size, bool L2gradient ,InputOutputArray _dx,InputOutputArray _dy)
+                bool L2gradient ,InputOutputArray _dx,InputOutputArray _dy)
 {
-    const int type = _src.type(), depth = CV_MAT_DEPTH(type), cn = 1;
-    const Size size = _src.size();
+    const int type = _dx.type(), depth = CV_MAT_DEPTH(type), cn = 1;
+    const Size size = _dx.size();
 
-    CV_Assert( depth == CV_8U );
+    CV_Assert( depth == CV_16S );
     _dst.create(size, CV_8U);
 
-    if (!L2gradient && (aperture_size & CV_CANNY_L2_GRADIENT) == CV_CANNY_L2_GRADIENT)
+    if (!L2gradient && ( CV_CANNY_L2_GRADIENT) == CV_CANNY_L2_GRADIENT)
     {
         // backward compatibility
-        aperture_size &= ~CV_CANNY_L2_GRADIENT;
         L2gradient = true;
     }
 
-    if ((aperture_size & 1) == 0 || (aperture_size != -1 && (aperture_size < 3 || aperture_size > 7)))
-        CV_Error(CV_StsBadFlag, "Aperture size should be odd");
 
     if (low_thresh > high_thresh)
         std::swap(low_thresh, high_thresh);
 
-/*    CV_OCL_RUN(_dst.isUMat() && (cn == 1 || cn == 3),
-               ocl_Canny(_src, _dst, (float)low_thresh, (float)high_thresh, aperture_size, L2gradient, cn, size))*/
 
-    Mat src = _src.getMat(), dst = _dst.getMat();
+    Mat dst = _dst.getMat();
 
-#ifdef HAVE_TEGRA_OPTIMIZATION
-    if (tegra::useTegra() && tegra::canny(src, dst, low_thresh, high_thresh, aperture_size, L2gradient))
-        return;
-#endif
-
- //   CV_IPP_RUN(USE_IPP_CANNY && (aperture_size == 3 && !L2gradient && 1 == cn), ippCanny(src, dst, (float)low_thresh, (float)high_thresh))
 
 #ifdef HAVE_TBB
 
@@ -769,16 +595,7 @@ while (borderPeaks.try_pop(m))
 
 #else
     Mat dx,dy;
-    if (_dx.empty())
-    {
-    Sobel(src, dx, CV_16S, 1, 0, aperture_size, 1, 0, BORDER_REPLICATE);
-    Sobel(src, dy, CV_16S, 0, 1, aperture_size, 1, 0, BORDER_REPLICATE);
-    }
-    else
-    {
-        dx = _dx.getMat(), dy = _dy.getMat();
-
-    }
+    dx = _dx.getMat(), dy = _dy.getMat();
 
 
 
@@ -793,8 +610,8 @@ while (borderPeaks.try_pop(m))
     int low = cvFloor(low_thresh);
     int high = cvFloor(high_thresh);
 
-    ptrdiff_t mapstep = src.cols + 2;
-    AutoBuffer<uchar> buffer((src.cols+2)*(src.rows+2) + cn * mapstep * 3 * sizeof(int));
+    ptrdiff_t mapstep = dx.cols + 2;
+    AutoBuffer<uchar> buffer((dx.cols+2)*(dx.rows+2) + cn * mapstep * 3 * sizeof(int));
 
     int* mag_buf[3];
     mag_buf[0] = (int*)(uchar*)buffer;
@@ -804,9 +621,9 @@ while (borderPeaks.try_pop(m))
 
     uchar* map = (uchar*)(mag_buf[2] + mapstep*cn);
     memset(map, 1, mapstep);
-    memset(map + mapstep*(src.rows + 1), 1, mapstep);
+    memset(map + mapstep*(dx.rows + 1), 1, mapstep);
 
-    int maxsize = std::max(1 << 10, src.cols * src.rows / 10);
+    int maxsize = std::max(1 << 10, dx.cols * dx.rows / 10);
     std::vector<uchar*> stack(maxsize);
     uchar **stack_top = &stack[0];
     uchar **stack_bottom = &stack[0];
@@ -835,17 +652,17 @@ while (borderPeaks.try_pop(m))
     //   0 - the pixel might belong to an edge
     //   1 - the pixel can not belong to an edge
     //   2 - the pixel does belong to an edge
-    for (int i = 0; i <= src.rows; i++)
+    for (int i = 0; i <= dx.rows; i++)
     {
         int* _norm = mag_buf[(i > 0) + 1] + 1;
-        if (i < src.rows)
+        if (i < dx.rows)
         {
             short* _dx = dx.ptr<short>(i);
             short* _dy = dy.ptr<short>(i);
 
             if (!L2gradient)
             {
-                int j = 0, width = src.cols * cn;
+                int j = 0, width = dx.cols * cn;
 #if CV_SSE2
                 if (haveSSE2)
                 {
@@ -879,7 +696,7 @@ while (borderPeaks.try_pop(m))
             }
             else
             {
-                int j = 0, width = src.cols * cn;
+                int j = 0, width = dx.cols * cn;
 #if CV_SSE2
                 if (haveSSE2)
                 {
@@ -917,7 +734,7 @@ while (borderPeaks.try_pop(m))
 
             if (cn > 1)
             {
-                for(int j = 0, jn = 0; j < src.cols; ++j, jn += cn)
+                for(int j = 0, jn = 0; j < dx.cols; ++j, jn += cn)
                 {
                     int maxIdx = jn;
                     for(int k = 1; k < cn; ++k)
@@ -927,7 +744,7 @@ while (borderPeaks.try_pop(m))
                     _dy[j] = _dy[maxIdx];
                 }
             }
-            _norm[-1] = _norm[src.cols] = 0;
+            _norm[-1] = _norm[dx.cols] = 0;
         }
         else
             memset(_norm-1, 0, /* cn* */mapstep*sizeof(int));
@@ -938,7 +755,7 @@ while (borderPeaks.try_pop(m))
             continue;
 
         uchar* _map = map + mapstep*i + 1;
-        _map[-1] = _map[src.cols] = 1;
+        _map[-1] = _map[dx.cols] = 1;
 
         int* _mag = mag_buf[1] + 1; // take the central row
         ptrdiff_t magstep1 = mag_buf[2] - mag_buf[1];
@@ -947,17 +764,17 @@ while (borderPeaks.try_pop(m))
         const short* _x = dx.ptr<short>(i-1);
         const short* _y = dy.ptr<short>(i-1);
 
-        if ((stack_top - stack_bottom) + src.cols > maxsize)
+        if ((stack_top - stack_bottom) + dx.cols > maxsize)
         {
             int sz = (int)(stack_top - stack_bottom);
-            maxsize = std::max(maxsize * 3/2, sz + src.cols);
+            maxsize = std::max(maxsize * 3/2, sz + dx.cols);
             stack.resize(maxsize);
             stack_bottom = &stack[0];
             stack_top = stack_bottom + sz;
         }
 
         int prev_flag = 0;
-        for (int j = 0; j < src.cols; j++)
+        for (int j = 0; j < dx.cols; j++)
         {
             #define CANNY_SHIFT 15
             const int TG22 = (int)(0.4142135623730950488016887242097*(1<<CANNY_SHIFT) + 0.5);
@@ -1041,22 +858,13 @@ __ocv_canny_push:
     // the final pass, form the final image
     const uchar* pmap = map + mapstep + 1;
     uchar* pdst = dst.ptr();
-    for (int i = 0; i < src.rows; i++, pmap += mapstep, pdst += dst.step)
+    for (int i = 0; i < dx.rows; i++, pmap += mapstep, pdst += dst.step)
     {
-        for (int j = 0; j < src.cols; j++)
+        for (int j = 0; j < dx.cols; j++)
             pdst[j] = (uchar)-(pmap[j] >> 1);
     }
 }
 
-void cvCannyBis( const CvArr* image, CvArr* edges, double threshold1,
-              double threshold2, int aperture_size )
-{
-    cv::Mat src = cv::cvarrToMat(image), dst = cv::cvarrToMat(edges);
-    CV_Assert( src.size == dst.size && src.depth() == CV_8U && dst.type() == CV_8U );
-
-    Canny(src, dst, threshold1, threshold2, aperture_size & 255,
-              (aperture_size & CV_CANNY_L2_GRADIENT) != 0);
-}
 
 
 
