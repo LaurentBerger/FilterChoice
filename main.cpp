@@ -20,7 +20,7 @@ UMat GradientDericheY(UMat op, double alphaDerive, double alphaMoyenne);
 UMat GradientDericheX(UMat op, double alphaDerive, double alphaMoyenne);
 UMat GradientPaillouY(UMat op, double alphaDerive, double alphaMoyenne);
 UMat GradientPaillouX(UMat op, double alphaDerive, double alphaMoyenne);
-void CannyBis(  OutputArray _dst,
+void Cannywgradient(  OutputArray _dst,
                 double low_thresh, double high_thresh,
                 bool L2gradient ,InputOutputArray _dx,InputOutputArray _dy);
 
@@ -75,7 +75,7 @@ static void CannyThreshold(int, void*)
 	mm = abs(ry.getMat(ACCESS_READ)); ry.getMat(ACCESS_READ).convertTo(sobel_y, CV_16S, 1);
 	minMaxLoc(sobel_x, &minv, &maxv);
 	minMaxLoc(sobel_y, &minv, &maxv);
-	CannyBis(dst, lowThresholdPai, maxThresholdPai,  true, sobel_x, sobel_y);
+	Cannywgradient(dst, lowThresholdPai, maxThresholdPai,  true, sobel_x, sobel_y);
 	UMat modPai;
 	add(rx.mul(rx), ry.mul(ry), modPai);
 	sqrt(modPai, modPai);
@@ -92,7 +92,7 @@ static void CannyThreshold(int, void*)
 	mm = abs(ry.getMat(ACCESS_READ)); ry.getMat(ACCESS_READ).convertTo(sobel_y, CV_16S, 1);
 	minMaxLoc(sobel_x, &minv, &maxv);
 	minMaxLoc(sobel_y, &minv, &maxv);
-	CannyBis(dst, lowThresholdDer, maxThresholdDer, true, sobel_x, sobel_y);
+	Cannywgradient(dst, lowThresholdDer, maxThresholdDer, true, sobel_x, sobel_y);
 	UMat modDer;
 	add(rx.mul(rx), ry.mul(ry), modDer);
 	sqrt(modDer, modDer);
@@ -115,9 +115,13 @@ int main(int argc, char* argv[])
 //	imread("C:/Users/Laurent.PC-LAURENT-VISI/Desktop/n67ut.jpg", CV_LOAD_IMAGE_GRAYSCALE).copyTo(img);
 //	imread("c:/lib/opencv/samples/data/lena.jpg", CV_LOAD_IMAGE_GRAYSCALE).copyTo(m);
 //	imread("c:/lib/opencv/samples/data/lena.jpg", CV_LOAD_IMAGE_GRAYSCALE).copyTo(img);
-//	imread("f:/lib/opencv/samples/data/pic2.png", CV_LOAD_IMAGE_GRAYSCALE).copyTo(img);
-	imread("A9MKM.jpg", CV_LOAD_IMAGE_GRAYSCALE).copyTo(img);
-    
+	imread("c:/lib/opencv/samples/data/pic2.png", CV_LOAD_IMAGE_GRAYSCALE).copyTo(img);
+//	imread("A9MKM.jpg", CV_LOAD_IMAGE_GRAYSCALE).copyTo(img);
+	if (img.empty())
+	{
+		cout << "File is empty. Check file path.\n";
+		return 0;
+	}
 	namedWindow(window_deriche, WINDOW_AUTOSIZE);
 	namedWindow(window_paillou, WINDOW_AUTOSIZE);
 	namedWindow(window_canny, WINDOW_AUTOSIZE);
