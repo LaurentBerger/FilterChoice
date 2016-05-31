@@ -115,16 +115,16 @@ int main(int argc, char* argv[])
 //	imread("C:/Users/Laurent.PC-LAURENT-VISI/Desktop/n67ut.jpg", CV_LOAD_IMAGE_GRAYSCALE).copyTo(img);
 //	imread("c:/lib/opencv/samples/data/lena.jpg", CV_LOAD_IMAGE_GRAYSCALE).copyTo(m);
 //	imread("c:/lib/opencv/samples/data/lena.jpg", CV_LOAD_IMAGE_GRAYSCALE).copyTo(img);
-	imread("c:/lib/opencv/samples/data/pic2.png", CV_LOAD_IMAGE_GRAYSCALE).copyTo(img);
+	imread("f:/lib/opencv/samples/data/pic2.png", CV_LOAD_IMAGE_GRAYSCALE).copyTo(img);
 //	imread("A9MKM.jpg", CV_LOAD_IMAGE_GRAYSCALE).copyTo(img);
 	if (img.empty())
 	{
 		cout << "File is empty. Check file path.\n";
 		return 0;
 	}
-	namedWindow(window_deriche, WINDOW_AUTOSIZE);
-	namedWindow(window_paillou, WINDOW_AUTOSIZE);
-	namedWindow(window_canny, WINDOW_AUTOSIZE);
+	namedWindow(window_deriche, WINDOW_NORMAL);
+	namedWindow(window_paillou, WINDOW_NORMAL);
+	namedWindow(window_canny, WINDOW_NORMAL);
 
       /// Create a Trackbar for user to enter threshold
 	createTrackbar("Der. Min.", window_deriche, &lowThresholdDer, 500, CannyThreshold);
